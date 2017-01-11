@@ -1,0 +1,11 @@
+{
+  "name": "when",
+  "version": "0.0.1",
+  "description": "Run a command when a previous command's stdout matches a pattern.",
+  "main": "when",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Slaven Bacic",
+  "license": "MIT"
+}

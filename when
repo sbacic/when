@@ -1,0 +1,53 @@
+#!/usr/bin/env node
+var spawn = require( 'child_process' ).spawn;
+let args  = process.argv.slice(2);
+
+/*
+* When accepts from two to three arguments - a command to run, a pattern to match and
+* another optional command to run once the pattern is matched. If no optional command is provided,
+* the original command is simply killed (if the optional command IS provided, the original IS NOT killed automatically).
+* Eg: when "docker-compose up" "LOG:  autovacuum launcher started" "docker-compose stop"
+* Run docker-compose up and listen to stdout for string "LOG:  autovacuum launcher started". When you see it,
+* run "docker-compose stop". ž
+* Eg: when "docker-compose up" "LOG:  autovacuum launcher started"
+* Send "docker-compose up" a SIGINT signal once the pattern is matched (the two examples have identical outcomes -
+* they both shut down running containers).
+*/
+
+if (args.length == 2) { //When we hit a match, exit
+  let command = spawn.apply(this, stringToSpawnArgs(args[0]));
+  run(command, args[1], function(){command.kill('SIGINT')});
+} else if (args.length > 2) { //When we hit a match, run the final command
+  let command = spawn.apply(this, stringToSpawnArgs(args[0]))
+  run(command, args[1], function(){spawn.apply(this, stringToSpawnArgs(args[2]))});
+} else {
+  console.log('When needs two arguments - a command and a string to match. One or both were not provided - aborting.');
+}
+
+/**
+ * Parses a string and creates an array for spawn.apply to consume.
+ * @param  {string} string The string to parse. Eg: "docker-compose up"
+ * @return {array}        The parsed string, as an array. Eg: ["docker-compose", ["up"]]
+ */
+function stringToSpawnArgs(string){
+  let array   = string.split(" ");
+  let command = array[0];
+  let args    = array.slice(1);
+
+  return [command, args];
+}
+
+/**
+ * Runs command when spawn's stdout matches pattern.
+ * @param  {object} spawn   A spawn object to attach stdout.on to. Eg: spawn.apply();
+ * @param  {string} pattern A string to match in stdout. Eg: 'Stopping postgres_db ... done'
+ * @param  {function} command A function to run once the match is found. Eg: function(){console.log("Hello world!");}
+ * @return {undefined}
+ */
+function run(spawn, pattern, command) {
+  spawn.stdout.on( 'data', data => {
+    if (data.indexOf(pattern) !== -1) {
+      command();
+    }
+  });
+}
