@@ -46,6 +46,8 @@ function stringToSpawnArgs(string){
  */
 function run(spawn, pattern, command) {
   spawn.stdout.on( 'data', data => {
+    console.log(`${data}`);
+
     if (data.indexOf(pattern) !== -1) {
       command();
     }
